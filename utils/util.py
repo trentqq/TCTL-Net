@@ -9,19 +9,7 @@ class LAB2RGB():
                            [0.019334, 0.119193, 0.950227]])
         self.Mt = np.linalg.inv(self.M)
 
-    # def BGR2RGB(self, img):  # img为[b,3,H,W]的张量
-    #     return torch.stack([img[:, 2, :, :], img[:, 1, :, :], img[:, 0, :, :]], dim=1)
-    #
-    # def RGB2BGR(self, img):  # img为[b,3,H,W]的张量
-    #     return (torch.stack([img[:, 2, :, :], img[:, 1, :, :], img[:, 0, :, :]], dim=1)).cuda()
-    #
-    # def gamma(self, r):
-    #     r2 = r / 12.92
-    #     index = r > 0.04045  # pow:0.0031308072830676845,/12.92:0.0031308049535603713
-    #     r2[index] = torch.pow((r[index] + 0.055) / 1.055, 2.4)
-    #     return r2
-
-    def anti_F(self, X):  # 逆操作。
+    def anti_F(self, X):
         tFX = (X - 0.137931) / 7.787
         index = X > 0.206893
         tFX[index] = torch.pow(X[index], 3)
@@ -54,11 +42,11 @@ class LAB2RGB():
         return (torch.stack([r, g, b], dim=1).clamp(0.0, 1.0))
 
 
-def BGR2RGB(img):  # img为[b,3,H,W]的张量
+def BGR2RGB(img):
     return torch.stack([img[:, 2, :, :], img[:, 1, :, :], img[:, 0, :, :]], dim=1)
 
 
-def RGB2BGR(img):  # img为[b,3,H,W]的张量
+def RGB2BGR(img):
     return (torch.stack([img[:, 2, :, :], img[:, 1, :, :], img[:, 0, :, :]], dim=1)).cuda()
 
 
@@ -97,7 +85,6 @@ def get_newpic(src, dst_size, align_corners=False):
     src_n, src_c, src_h, src_w = src.shape
     dst_n, dst_c, (dst_w, dst_h) = src_n, src_c, dst_size
 
-    """将dst的H和W坐标映射到src的H和W坐标"""
     hd = torch.arange(0, dst_h)
     wd = torch.arange(0, dst_w)
     if align_corners:
@@ -107,33 +94,30 @@ def get_newpic(src, dst_size, align_corners=False):
         h = (float(src_h) / dst_h * (hd + 0.5) - 0.5).cuda()
         w = (float(src_w) / dst_w * (wd + 0.5) - 0.5).cuda()
 
-    h = torch.clamp(h, 0, src_h - 1)  # 防止越界，0相当于上边界padding
-    w = torch.clamp(w, 0, src_w - 1)  # 防止越界，0相当于左边界padding
+    h = torch.clamp(h, 0, src_h - 1)
+    w = torch.clamp(w, 0, src_w - 1)
 
-    h = h.view(dst_h, 1)  # 1维dst_h个，变2维dst_h*1个
-    w = w.view(1, dst_w)  # 1维dst_w个，变2维1*dst_w个
-    h = h.repeat(1, dst_w)  # H方向重复1次，W方向重复dst_w次
-    w = w.repeat(dst_h, 1)  # H方向重复dsth次，W方向重复1次
+    h = h.view(dst_h, 1)
+    w = w.view(1, dst_w)
+    h = h.repeat(1, dst_w)
+    w = w.repeat(dst_h, 1)
 
-    """求出四点坐标"""
-    h0 = torch.clamp(torch.floor(h), 0, src_h - 2).cuda()  # -2相当于下边界padding
-    w0 = torch.clamp(torch.floor(w), 0, src_w - 2).cuda()  # -2相当于右边界padding
-    h0 = h0.long()  # torch坐标必须是long
-    w0 = w0.long()  # torch坐标必须是long
+    h0 = torch.clamp(torch.floor(h), 0, src_h - 2).cuda()
+    w0 = torch.clamp(torch.floor(w), 0, src_w - 2).cuda()
+    h0 = h0.long()
+    w0 = w0.long()
 
     h1 = h0 + 1
     w1 = w0 + 1
 
-    """求出四点值"""
     q00 = src[..., h0, w0]
     q01 = src[..., h0, w1]
     q10 = src[..., h1, w0]
     q11 = src[..., h1, w1]
 
-    """公式计算"""
-    r0 = (w1 - w) * q00 + (w - w0) * q01  # 双线性插值的r0
-    r1 = (w1 - w) * q10 + (w - w0) * q11  # 双线性差值的r1
-    dst = (h1 - h) * r0 + (h - h0) * r1  # 双线性差值的q
+    r0 = (w1 - w) * q00 + (w - w0) * q01
+    r1 = (w1 - w) * q10 + (w - w0) * q11
+    dst = (h1 - h) * r0 + (h - h0) * r1
 
     return dst
 

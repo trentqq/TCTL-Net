@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from utils.util import LAB2RGB, RGB2BGR
 
+
 class SingleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
@@ -87,10 +88,12 @@ class OutConv(nn.Module):
     def forward(self, x):
         return self.conv(x)
 
-#raw pic in lab color transfer by predic matrix(sum by parm_six and parm_mt1), pixel color transfer one by one
+
+# raw pic in lab color transfer by predic matrix(sum by parm_six and parm_mt1), pixel color transfer one by one
 class color_trans(object):
-    def __init__(self, channel = 3):
+    def __init__(self, channel=3):
         self.split_dev = channel
+
     def trans(self, parm_mt2, pic_ct, mean, std):
         Lab2Rgb = LAB2RGB()
         batch_size, channel, _, _ = pic_ct.size()
@@ -98,7 +101,7 @@ class color_trans(object):
             for n in range(channel):
                 sd = 3 + n
                 t = pic_ct[m, n, :, :]
-                #color transfer: t = (t-mean[m, n, :, :])*(parm_mt2[m, sd, :, :]/std[m, n,:,:]) + parm_mt2[m, n, :, :]
+                # color transfer: t = (t-mean[m, n, :, :])*(parm_mt2[m, sd, :, :]/std[m, n,:,:]) + parm_mt2[m, n, :, :]
                 mean1 = torch.sub(t, mean[m, n, :, :])
                 std_st = torch.div(parm_mt2[m, sd, :, :], std[m, n, :, :])
                 out1 = torch.mul(mean1, std_st)
@@ -107,7 +110,7 @@ class color_trans(object):
         pic_ct2 = Lab2Rgb.myPSlab2rgb(pic_ct)
         pic_ct3 = (RGB2BGR(pic_ct2)) / (1. / 255)
 
-        #get pic:b*c*H*W
+        # get pic:b*c*H*W
         return pic_ct3
 
     def cal_mt(self, parm_six, parm_dev_mt):
@@ -117,37 +120,8 @@ class color_trans(object):
 
     def cal_dev_mean(self, parm_six, parm_dev_mt):
         parm_six_mid = torch.unsqueeze(torch.unsqueeze(parm_six, -1), -1)
-        parm_six_reshape = parm_six_mid.expand([-1,-1, 256, 256])
+        parm_six_reshape = parm_six_mid.expand([-1, -1, 256, 256])
         mean, std = torch.split(parm_six_reshape, self.split_dev, dim=1)
         parm_final_mean_mt = mean + parm_dev_mt
         parm_final_mt = torch.cat((parm_final_mean_mt, std), 1)
         return parm_final_mt
-
-    '''
-        parm_six_reshape = torch.unsqueeze(torch.unsqueeze(parm_six, -1), -1)
-        mean, std = torch.split(parm_six_reshape, self.split_dev, dim=1)
-        parm_final_mean_mt = mean + parm_dev_mean_mt
-        parm_final_mt = torch.cat((parm_final_mean_mt, std), 1)
-        return parm_final_mt
-        def cal_mt(self, parm_six, parm_mt1):
-        mt1 = torch.unsqueeze(torch.unsqueeze(parm_six, -1), -1)
-        parm_mt2 = mt1 + parm_mt1
-        count_zero_mt = torch.zeros_like(parm_mt2[:,3:,:,:])
-        mid_mt = torch.where(parm_mt2[:,3:,:,:]>0, parm_mt2[:,3:,:,:], count_zero_mt)
-        parm_mt2[:, 3:, :, :] = mid_mt
-        return parm_mt2
-    '''
-
-
-
-
-
-
-
-
-
-
-
-
-
-

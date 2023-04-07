@@ -12,3 +12,4 @@ python train.py --dataroot /path_to_data --name train_name
 ```
 python test.py --dataroot /path_to_data --name test_name
 ```
+You can download the trained model from [Baidu Netdisk](https://pan.baidu.com/s/1zLHssfNI2sgXMSb6ybyQfw)(Extraction code:rw85) or [Google Drive](https://drive.google.com/file/d/1OAESvi-uIRfELIbX_dLlas43Lx-USxvf/view?usp=sharing).
